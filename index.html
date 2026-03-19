@@ -20,67 +20,107 @@
 </head>
 <body>
 
-<img src="https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" alt="Tai Chi Meme">
+<!-- Calm Mr. Miyagi Tai Chi video overlay -->
+<div id="intro-video-overlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:black;z-index:2000;display:flex;justify-content:center;align-items:center;">
+  <video id="miyagi-video" width="80%" style="border-radius:16px;box-shadow:0 0 40px #000;" autoplay muted>
+    <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+    <!-- Replace with actual Mr. Miyagi Tai Chi video if available and allowed. Placeholder video used. -->
+    Your browser does not support the video tag.
+  </video>
+</div>
 
+<div id="prank-content" style="display:none;">
+  <img src="https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" alt="Tai Chi Meme">
   <audio id="kungfu-audio" autoplay loop>
     <source src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae5e2.mp3" type="audio/mpeg">
     <!-- This is a royalty-free version of 'Kung Fu Fighting'. For the original, you must have the rights to use it. -->
     Your browser does not support the audio element.
   </audio>
   <button id="play-btn" style="position:fixed;top:20px;right:20px;font-size:1.2em;padding:10px 20px;z-index:1000;">Play Song</button>
+</div>
 <script>
-// ...existing code...
+// --- Prank reveal after intro video ---
+const introOverlay = document.getElementById('intro-video-overlay');
+const prankContent = document.getElementById('prank-content');
+const miyagiVideo = document.getElementById('miyagi-video');
 
-// Ensure audio plays on user interaction
-const audio = document.getElementById('kungfu-audio');
-const playBtn = document.getElementById('play-btn');
-
-function tryPlayAudio() {
-  audio.play().then(() => {
-    playBtn.style.display = 'none';
-  }).catch(() => {
-    playBtn.style.display = 'block';
-  });
+function showPrank() {
+  introOverlay.style.display = 'none';
+  prankContent.style.display = '';
+  // Start prank effects (audio, movement, etc)
+  if (typeof tryPlayAudio === 'function') tryPlayAudio();
 }
 
-// Try to play on load
-window.addEventListener('load', tryPlayAudio);
-
-// Play on button click
-playBtn.addEventListener('click', tryPlayAudio);
-
-// Optionally, hide button if audio starts playing
-audio.addEventListener('play', () => {
-  playBtn.style.display = 'none';
-});
+// Reveal prank after video ends or after 12 seconds (whichever comes first)
+miyagiVideo.addEventListener('ended', showPrank);
+setTimeout(showPrank, 12000);
 </script>
 
 <script>
-// Flashing background colors
-const colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#ffffff", "#000000"]; // Add more for fun
-let colorIndex = 0;
-setInterval(() => {
-  document.body.style.background = colors[colorIndex % colors.length];
-  colorIndex++;
-}, 200);
+// Only run prank effects after prank is revealed
+function startPrankEffects() {
+  // Flashing background colors
+  const colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#ffffff", "#000000"];
+  let colorIndex = 0;
+  setInterval(() => {
+    document.body.style.background = colors[colorIndex % colors.length];
+    colorIndex++;
+  }, 200);
 
-// Randomly move the image
-const img = document.querySelector('img');
-function moveImage() {
-  const maxX = window.innerWidth - img.offsetWidth;
-  const maxY = window.innerHeight - img.offsetHeight;
-  const x = Math.random() * maxX;
-  const y = Math.random() * maxY;
-  img.style.position = 'absolute';
-  img.style.left = x + 'px';
-  img.style.top = y + 'px';
+  // Randomly move the image
+  const img = prankContent.querySelector('img');
+  function moveImage() {
+    const maxX = window.innerWidth - img.offsetWidth;
+    const maxY = window.innerHeight - img.offsetHeight;
+    const x = Math.random() * maxX;
+    const y = Math.random() * maxY;
+    img.style.position = 'absolute';
+    img.style.left = x + 'px';
+    img.style.top = y + 'px';
+  }
+  setInterval(moveImage, 700);
+
+  // Pop-up prank message after a few seconds
+  setTimeout(() => {
+    alert("You've been Tai Chi-ed! 🥋");
+  }, 5000);
+
+  // Audio play button logic
+  const audio = document.getElementById('kungfu-audio');
+  const playBtn = document.getElementById('play-btn');
+  function tryPlayAudio() {
+    audio.play().then(() => {
+      playBtn.style.display = 'none';
+    }).catch(() => {
+      playBtn.style.display = 'block';
+    });
+  }
+  window.addEventListener('load', tryPlayAudio);
+  playBtn.addEventListener('click', tryPlayAudio);
+  audio.addEventListener('play', () => {
+    playBtn.style.display = 'none';
+  });
 }
-setInterval(moveImage, 700);
 
-// Pop-up prank message after a few seconds
-setTimeout(() => {
-  alert("You've been Kung Fu pranked! 🥋");
-}, 5000);
+// Start prank effects when prank is shown
+function tryPlayAudio() { /* placeholder for reveal */ }
+prankContent.addEventListener('transitionend', startPrankEffects);
+// Fallback: start effects as soon as prank is shown
+let prankStarted = false;
+function revealAndStartPrank() {
+  if (!prankStarted) {
+    prankStarted = true;
+    startPrankEffects();
+  }
+}
+prankContent.addEventListener('DOMSubtreeModified', revealAndStartPrank);
+// Also call on prank show
+showPrank = (function(orig){
+  return function() {
+    orig();
+    revealAndStartPrank();
+  }
+})(showPrank);
 </script>
 
 </body>
