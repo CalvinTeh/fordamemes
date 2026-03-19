@@ -95,7 +95,8 @@ function startPrankEffects() {
       playBtn.style.display = 'block';
     });
   }
-  window.addEventListener('load', tryPlayAudio);
+  // Try to play as soon as prank is revealed
+  tryPlayAudio();
   playBtn.addEventListener('click', tryPlayAudio);
   audio.addEventListener('play', () => {
     playBtn.style.display = 'none';
@@ -103,9 +104,6 @@ function startPrankEffects() {
 }
 
 // Start prank effects when prank is shown
-function tryPlayAudio() { /* placeholder for reveal */ }
-prankContent.addEventListener('transitionend', startPrankEffects);
-// Fallback: start effects as soon as prank is shown
 let prankStarted = false;
 function revealAndStartPrank() {
   if (!prankStarted) {
@@ -113,8 +111,7 @@ function revealAndStartPrank() {
     startPrankEffects();
   }
 }
-prankContent.addEventListener('DOMSubtreeModified', revealAndStartPrank);
-// Also call on prank show
+// Call when prank is shown
 showPrank = (function(orig){
   return function() {
     orig();
