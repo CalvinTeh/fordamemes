@@ -120,17 +120,6 @@
       100% { background: #1a1a2e; }
     }
 
-    /* Play button */
-    #play-btn {
-      position: fixed; top: 20px; right: 20px;
-      padding: 12px 24px; font-size: 1em; font-weight: 600;
-      background: #f5be50; color: #fff; border: none; border-radius: 8px;
-      cursor: pointer; z-index: 5000;
-      display: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      transition: transform 0.2s;
-    }
-    #play-btn:hover { transform: scale(1.08); }
   </style>
 </head>
 <body>
@@ -152,13 +141,7 @@
   <div id="fine-print">This message was approved by ME™</div>
 </div>
 
-<!-- Audio - short royalty-free kung fu clip -->
-<audio id="kungfu-audio" preload="auto">
-  <source src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae5e2.mp3" type="audio/mpeg">
-</audio>
-
-<!-- Fallback play button if audio gets blocked -->
-<button id="play-btn">&#9654; Unmute the Experience</button>
+<!-- No external audio needed - generated via Web Audio API -->
 
 <script>
 (function() {
@@ -166,12 +149,125 @@
   const bait = document.getElementById('corporate-bait');
   const prankContent = document.getElementById('prank-content');
   const revealBtn = document.getElementById('reveal-btn');
-  const audio = document.getElementById('kungfu-audio');
-  const playBtn = document.getElementById('play-btn');
   const prankText = document.getElementById('prank-text');
   const finePrint = document.getElementById('fine-print');
   const loadingStatus = document.getElementById('loading-status');
   const memeGif = document.getElementById('meme-gif');
+
+  // === WEB AUDIO API: Kung Fu Pentatonic Riff ===
+  let audioCtx = null;
+
+  function playKungFuRiff() {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.35;
+    masterGain.connect(audioCtx.destination);
+
+    // Pentatonic scale notes (kung fu movie vibe)
+    // Pattern: dramatic hit → fast ascending run → gong → melody
+    const bpm = 160;
+    const beat = 60 / bpm;
+    let t = audioCtx.currentTime + 0.05;
+
+    function playNote(freq, start, duration, type, gainVal) {
+      const osc = audioCtx.createOscillator();
+      const env = audioCtx.createGain();
+      osc.type = type || 'square';
+      osc.frequency.value = freq;
+      env.gain.setValueAtTime(gainVal || 0.3, start);
+      env.gain.exponentialRampToValueAtTime(0.001, start + duration);
+      osc.connect(env);
+      env.connect(masterGain);
+      osc.start(start);
+      osc.stop(start + duration);
+    }
+
+    function playGong(start, duration) {
+      [130.81, 164.81, 261.63, 329.63].forEach(f => {
+        const osc = audioCtx.createOscillator();
+        const env = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = f;
+        osc.frequency.exponentialRampToValueAtTime(f * 0.85, start + duration);
+        env.gain.setValueAtTime(0.15, start);
+        env.gain.exponentialRampToValueAtTime(0.001, start + duration);
+        osc.connect(env);
+        env.connect(masterGain);
+        osc.start(start);
+        osc.stop(start + duration);
+      });
+    }
+
+    // Dramatic opening GONG
+    playGong(t, 2.0);
+
+    // Quick drum hits (noise bursts)
+    function playDrum(start) {
+      const bufferSize = audioCtx.sampleRate * 0.08;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+      const src = audioCtx.createBufferSource();
+      const env = audioCtx.createGain();
+      src.buffer = buffer;
+      env.gain.setValueAtTime(0.5, start);
+      env.gain.exponentialRampToValueAtTime(0.001, start + 0.08);
+      src.connect(env);
+      env.connect(masterGain);
+      src.start(start);
+    }
+
+    // Pentatonic melody: E4, G4, A4, B4, D5, E5
+    const melody = [
+      // Bar 1: dramatic entrance after gong
+      { n: 329.63, t: 0.8, d: beat * 0.5 },   // E4 
+      { n: 392.00, t: 1.0, d: beat * 0.5 },   // G4
+      { n: 440.00, t: 1.2, d: beat * 0.8 },   // A4
+      { n: 493.88, t: 1.6, d: beat * 0.3 },   // B4
+      { n: 587.33, t: 1.8, d: beat * 0.8 },   // D5
+      { n: 659.25, t: 2.2, d: beat * 1.2 },   // E5 (hold)
+      // Bar 2: descending
+      { n: 587.33, t: 3.0, d: beat * 0.4 },   // D5
+      { n: 493.88, t: 3.3, d: beat * 0.4 },   // B4
+      { n: 440.00, t: 3.6, d: beat * 0.4 },   // A4
+      { n: 392.00, t: 3.9, d: beat * 0.6 },   // G4
+      { n: 329.63, t: 4.3, d: beat * 1.0 },   // E4 (hold)
+      // Bar 3: fast flurry
+      { n: 440.00, t: 5.0, d: beat * 0.2 },
+      { n: 493.88, t: 5.15, d: beat * 0.2 },
+      { n: 587.33, t: 5.3, d: beat * 0.2 },
+      { n: 659.25, t: 5.45, d: beat * 0.2 },
+      { n: 783.99, t: 5.6, d: beat * 0.2 },   // G5
+      { n: 659.25, t: 5.8, d: beat * 0.5 },   // E5
+      { n: 587.33, t: 6.2, d: beat * 0.3 },
+      { n: 440.00, t: 6.5, d: beat * 0.3 },
+      { n: 329.63, t: 6.8, d: beat * 1.5 },   // final E4
+      // Bar 4: finishing gong + hit
+      { n: 164.81, t: 8.2, d: 3.0 },          // low E3 drone
+    ];
+
+    melody.forEach(note => {
+      playNote(note.n, t + note.t, note.d, 'square', 0.25);
+      playNote(note.n * 2, t + note.t, note.d * 0.7, 'sine', 0.08); // harmonic
+    });
+
+    // Drum hits on the beat
+    [0.8, 1.2, 1.8, 2.2, 3.0, 3.6, 5.0, 5.3, 5.6, 6.2, 6.8, 8.2].forEach(time => {
+      playDrum(t + time);
+    });
+
+    // Second gong at the end
+    playGong(t + 8.0, 3.5);
+
+    // Fade master out after ~12 seconds
+    masterGain.gain.setValueAtTime(0.35, t + 10);
+    masterGain.gain.linearRampToValueAtTime(0, t + 12);
+
+    // Clean up after 13 seconds
+    setTimeout(() => {
+      if (audioCtx) audioCtx.close();
+    }, 13000);
+  }
 
   // Fake loading messages for corporate authenticity
   const loadingMsgs = [
@@ -233,20 +329,8 @@
       prankContent.classList.add('active');
       document.body.style.animation = 'gentlePulse 6s ease infinite';
 
-      // Play audio (user clicked, so we have interaction permission)
-      audio.currentTime = 0;
-      audio.play().then(() => {
-        playBtn.style.display = 'none';
-
-        // Stop audio after 15 seconds for a shorter clip
-        setTimeout(() => {
-          audio.pause();
-          audio.currentTime = 0;
-        }, 15000);
-      }).catch(() => {
-        // Show fallback button if still blocked
-        playBtn.style.display = 'block';
-      });
+      // Play kung fu riff (user clicked, so we have interaction permission)
+      playKungFuRiff();
 
       // Start cycling prank text
       let textIdx = 0;
@@ -278,18 +362,6 @@
       setTimeout(() => finePrint.classList.add('show'), 4000);
 
     }, 500);
-  });
-
-  // Fallback play button
-  playBtn.addEventListener('click', function() {
-    audio.currentTime = 0;
-    audio.play().then(() => {
-      playBtn.style.display = 'none';
-      setTimeout(() => {
-        audio.pause();
-        audio.currentTime = 0;
-      }, 15000);
-    });
   });
 })();
 </script>
