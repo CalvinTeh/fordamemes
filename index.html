@@ -154,119 +154,170 @@
   const loadingStatus = document.getElementById('loading-status');
   const memeGif = document.getElementById('meme-gif');
 
-  // === WEB AUDIO API: Kung Fu Pentatonic Riff ===
+  // === WEB AUDIO API: "Kung Fu Fighting" melody ===
   let audioCtx = null;
 
   function playKungFuRiff() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const masterGain = audioCtx.createGain();
-    masterGain.gain.value = 0.35;
+    masterGain.gain.value = 0.4;
     masterGain.connect(audioCtx.destination);
 
-    // Pentatonic scale notes (kung fu movie vibe)
-    // Pattern: dramatic hit → fast ascending run → gong → melody
-    const bpm = 160;
-    const beat = 60 / bpm;
     let t = audioCtx.currentTime + 0.05;
+    const bpm = 116; // original tempo
+    const beat = 60 / bpm;
 
-    function playNote(freq, start, duration, type, gainVal) {
+    // --- Helper: synth note ---
+    function playNote(freq, start, duration, type, vol) {
       const osc = audioCtx.createOscillator();
       const env = audioCtx.createGain();
       osc.type = type || 'square';
       osc.frequency.value = freq;
-      env.gain.setValueAtTime(gainVal || 0.3, start);
+      env.gain.setValueAtTime(vol || 0.25, start);
+      env.gain.setValueAtTime(vol || 0.25, start + duration * 0.7);
       env.gain.exponentialRampToValueAtTime(0.001, start + duration);
       osc.connect(env);
       env.connect(masterGain);
       osc.start(start);
-      osc.stop(start + duration);
+      osc.stop(start + duration + 0.01);
     }
 
-    function playGong(start, duration) {
-      [130.81, 164.81, 261.63, 329.63].forEach(f => {
-        const osc = audioCtx.createOscillator();
-        const env = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = f;
-        osc.frequency.exponentialRampToValueAtTime(f * 0.85, start + duration);
-        env.gain.setValueAtTime(0.15, start);
-        env.gain.exponentialRampToValueAtTime(0.001, start + duration);
-        osc.connect(env);
-        env.connect(masterGain);
-        osc.start(start);
-        osc.stop(start + duration);
-      });
+    // --- Helper: funky bass note ---
+    function playBass(freq, start, duration) {
+      const osc = audioCtx.createOscillator();
+      const env = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      env.gain.setValueAtTime(0.18, start);
+      env.gain.exponentialRampToValueAtTime(0.001, start + duration);
+      osc.connect(env);
+      env.connect(masterGain);
+      osc.start(start);
+      osc.stop(start + duration + 0.01);
     }
 
-    // Dramatic opening GONG
-    playGong(t, 2.0);
-
-    // Quick drum hits (noise bursts)
-    function playDrum(start) {
-      const bufferSize = audioCtx.sampleRate * 0.08;
+    // --- Helper: hi-hat / snare ---
+    function playDrum(start, isSnare) {
+      const len = isSnare ? 0.12 : 0.05;
+      const bufferSize = Math.floor(audioCtx.sampleRate * len);
       const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
       const src = audioCtx.createBufferSource();
       const env = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = isSnare ? 'bandpass' : 'highpass';
+      filter.frequency.value = isSnare ? 3000 : 8000;
       src.buffer = buffer;
-      env.gain.setValueAtTime(0.5, start);
-      env.gain.exponentialRampToValueAtTime(0.001, start + 0.08);
-      src.connect(env);
+      env.gain.setValueAtTime(isSnare ? 0.4 : 0.15, start);
+      env.gain.exponentialRampToValueAtTime(0.001, start + len);
+      src.connect(filter);
+      filter.connect(env);
       env.connect(masterGain);
       src.start(start);
     }
 
-    // Pentatonic melody: E4, G4, A4, B4, D5, E5
-    const melody = [
-      // Bar 1: dramatic entrance after gong
-      { n: 329.63, t: 0.8, d: beat * 0.5 },   // E4 
-      { n: 392.00, t: 1.0, d: beat * 0.5 },   // G4
-      { n: 440.00, t: 1.2, d: beat * 0.8 },   // A4
-      { n: 493.88, t: 1.6, d: beat * 0.3 },   // B4
-      { n: 587.33, t: 1.8, d: beat * 0.8 },   // D5
-      { n: 659.25, t: 2.2, d: beat * 1.2 },   // E5 (hold)
-      // Bar 2: descending
-      { n: 587.33, t: 3.0, d: beat * 0.4 },   // D5
-      { n: 493.88, t: 3.3, d: beat * 0.4 },   // B4
-      { n: 440.00, t: 3.6, d: beat * 0.4 },   // A4
-      { n: 392.00, t: 3.9, d: beat * 0.6 },   // G4
-      { n: 329.63, t: 4.3, d: beat * 1.0 },   // E4 (hold)
-      // Bar 3: fast flurry
-      { n: 440.00, t: 5.0, d: beat * 0.2 },
-      { n: 493.88, t: 5.15, d: beat * 0.2 },
-      { n: 587.33, t: 5.3, d: beat * 0.2 },
-      { n: 659.25, t: 5.45, d: beat * 0.2 },
-      { n: 783.99, t: 5.6, d: beat * 0.2 },   // G5
-      { n: 659.25, t: 5.8, d: beat * 0.5 },   // E5
-      { n: 587.33, t: 6.2, d: beat * 0.3 },
-      { n: 440.00, t: 6.5, d: beat * 0.3 },
-      { n: 329.63, t: 6.8, d: beat * 1.5 },   // final E4
-      // Bar 4: finishing gong + hit
-      { n: 164.81, t: 8.2, d: 3.0 },          // low E3 drone
+    // Note frequencies (key of C minor)
+    const C4 = 261.63, D4 = 293.66, Eb4 = 311.13, F4 = 349.23, G4 = 392.00;
+    const Ab4 = 415.30, Bb4 = 466.16, C5 = 523.25, D5 = 587.33, Eb5 = 622.25;
+    const C3 = 130.81, Eb3 = 155.56, F3 = 174.61, G3 = 196.00, Ab3 = 207.65, Bb3 = 233.08;
+
+    // ===== ICONIC INTRO RIFF (funky synth) =====
+    // The "duh duh duh duh-duh" opening
+    const introRiff = [
+      { n: C5,  t: 0,            d: beat * 0.3 },
+      { n: C5,  t: beat * 0.5,   d: beat * 0.3 },
+      { n: Bb4, t: beat * 1.0,   d: beat * 0.3 },
+      { n: C5,  t: beat * 1.5,   d: beat * 0.5 },
+      { n: G4,  t: beat * 2.5,   d: beat * 0.3 },
+      { n: G4,  t: beat * 3.0,   d: beat * 0.3 },
+      { n: F4,  t: beat * 3.5,   d: beat * 0.3 },
+      { n: G4,  t: beat * 4.0,   d: beat * 0.8 },
     ];
 
-    melody.forEach(note => {
-      playNote(note.n, t + note.t, note.d, 'square', 0.25);
-      playNote(note.n * 2, t + note.t, note.d * 0.7, 'sine', 0.08); // harmonic
+    // Play intro riff twice
+    introRiff.forEach(note => {
+      playNote(note.n, t + note.t, note.d, 'square', 0.22);
+      playNote(note.n, t + note.t, note.d, 'sawtooth', 0.08);
+    });
+    const riff2Start = beat * 5;
+    introRiff.forEach(note => {
+      playNote(note.n, t + riff2Start + note.t, note.d, 'square', 0.22);
+      playNote(note.n, t + riff2Start + note.t, note.d, 'sawtooth', 0.08);
     });
 
-    // Drum hits on the beat
-    [0.8, 1.2, 1.8, 2.2, 3.0, 3.6, 5.0, 5.3, 5.6, 6.2, 6.8, 8.2].forEach(time => {
-      playDrum(t + time);
+    // ===== VOCAL MELODY: "Everybody was kung fu fighting" =====
+    const vocStart = beat * 10;
+    const vocal1 = [
+      // "Eve - ry - bo - dy   was   kung  fu   fight - ing"
+      { n: G4,  t: 0,            d: beat * 0.4 },  // Eve-
+      { n: G4,  t: beat * 0.5,   d: beat * 0.4 },  // -ry-
+      { n: G4,  t: beat * 1.0,   d: beat * 0.4 },  // -bo-
+      { n: G4,  t: beat * 1.5,   d: beat * 0.5 },  // -dy
+      { n: G4,  t: beat * 2.5,   d: beat * 0.4 },  // was
+      { n: Eb4, t: beat * 3.2,   d: beat * 0.3 },  // kung
+      { n: G4,  t: beat * 3.7,   d: beat * 0.3 },  // fu
+      { n: Ab4, t: beat * 4.2,   d: beat * 0.5 },  // fight-
+      { n: G4,  t: beat * 4.8,   d: beat * 1.0 },  // -ing
+    ];
+
+    // "Those kicks were fast as lightning"
+    const vocal2Start = beat * 6;
+    const vocal2 = [
+      // "Those  kicks  were  fast   as    light  -  ning"
+      { n: Bb4, t: 0,            d: beat * 0.4 },  // Those
+      { n: Bb4, t: beat * 0.5,   d: beat * 0.4 },  // kicks
+      { n: Bb4, t: beat * 1.0,   d: beat * 0.4 },  // were
+      { n: Ab4, t: beat * 1.5,   d: beat * 0.4 },  // fast
+      { n: G4,  t: beat * 2.0,   d: beat * 0.4 },  // as
+      { n: F4,  t: beat * 2.8,   d: beat * 0.5 },  // light-
+      { n: Eb4, t: beat * 3.5,   d: beat * 1.2 },  // -ning
+    ];
+
+    vocal1.forEach(note => {
+      playNote(note.n, t + vocStart + note.t, note.d, 'square', 0.2);
+      playNote(note.n * 2, t + vocStart + note.t, note.d * 0.5, 'sine', 0.06);
+    });
+    vocal2.forEach(note => {
+      playNote(note.n, t + vocStart + vocal2Start + note.t, note.d, 'square', 0.2);
+      playNote(note.n * 2, t + vocStart + vocal2Start + note.t, note.d * 0.5, 'sine', 0.06);
     });
 
-    // Second gong at the end
-    playGong(t + 8.0, 3.5);
+    // ===== BASS LINE (funky octave C minor) =====
+    const bassPattern = [0, 0.5, 1.5, 2, 3, 3.5];
+    const bassNotes = [C3, C3, Eb3, F3, G3, G3];
+    for (let bar = 0; bar < 5; bar++) {
+      const barStart = bar * beat * 4;
+      bassPattern.forEach((pos, i) => {
+        playBass(bassNotes[i % bassNotes.length], t + barStart + beat * pos, beat * 0.4);
+      });
+    }
 
-    // Fade master out after ~12 seconds
-    masterGain.gain.setValueAtTime(0.35, t + 10);
-    masterGain.gain.linearRampToValueAtTime(0, t + 12);
+    // ===== DRUM PATTERN =====
+    for (let bar = 0; bar < 5; bar++) {
+      const barStart = bar * beat * 4;
+      for (let eighth = 0; eighth < 8; eighth++) {
+        const hitTime = t + barStart + eighth * beat * 0.5;
+        playDrum(hitTime, false); // hi-hat on every eighth
+        if (eighth === 2 || eighth === 6) playDrum(hitTime, true); // snare on 2 & 4
+      }
+    }
 
-    // Clean up after 13 seconds
+    // ===== REPEAT THE HOOK once more =====
+    const rep = beat * 20;
+    introRiff.forEach(note => {
+      playNote(note.n, t + rep + note.t, note.d, 'square', 0.22);
+      playNote(note.n, t + rep + note.t, note.d, 'sawtooth', 0.08);
+    });
+
+    // Fade out after ~12 seconds
+    const totalDur = beat * 24;
+    masterGain.gain.setValueAtTime(0.4, t + totalDur - 2);
+    masterGain.gain.linearRampToValueAtTime(0, t + totalDur);
+
     setTimeout(() => {
       if (audioCtx) audioCtx.close();
-    }, 13000);
+    }, (totalDur + 1) * 1000);
   }
 
   // Fake loading messages for corporate authenticity
