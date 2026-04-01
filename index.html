@@ -2,122 +2,297 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Kung Fu Surprise</title>
+  <title>Q2 Performance Dashboard - Confidential</title>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      transition: background 1.5s ease;
+      overflow: hidden;
       height: 100vh;
-      margin: 0;
-      background: black;
     }
-    img {
-      max-width: 90%;
-      border-radius: 12px;
+
+    /* === CORPORATE BAIT SCREEN === */
+    #corporate-bait {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: linear-gradient(135deg, #1e3a5f, #2c5f8a);
+      z-index: 3000;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      color: white;
     }
+    #corporate-bait .logo-area {
+      font-size: 0.9em; opacity: 0.7; letter-spacing: 3px; text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+    #corporate-bait h1 {
+      font-size: 2.2em; font-weight: 300; margin-bottom: 10px;
+    }
+    #corporate-bait .subtitle {
+      font-size: 1em; opacity: 0.8; margin-bottom: 50px;
+    }
+    #corporate-bait .loading-bar {
+      width: 300px; height: 4px; background: rgba(255,255,255,0.2); border-radius: 2px;
+      overflow: hidden; margin-bottom: 15px;
+    }
+    #corporate-bait .loading-fill {
+      height: 100%; width: 0%; background: #4fc3f7; border-radius: 2px;
+      animation: loadProgress 4s ease-in-out forwards;
+    }
+    @keyframes loadProgress {
+      0% { width: 0%; }
+      60% { width: 72%; }
+      85% { width: 88%; }
+      100% { width: 100%; }
+    }
+    #corporate-bait .loading-text {
+      font-size: 0.85em; opacity: 0.6;
+    }
+    #corporate-bait .click-prompt {
+      margin-top: 40px; padding: 14px 40px;
+      background: #4fc3f7; color: #1e3a5f; border: none; border-radius: 6px;
+      font-size: 1em; font-weight: 600; cursor: pointer;
+      opacity: 0; animation: fadeInBtn 1s ease 3.8s forwards;
+      transition: transform 0.2s;
+    }
+    #corporate-bait .click-prompt:hover { transform: scale(1.05); }
+    @keyframes fadeInBtn { to { opacity: 1; } }
+
+    /* === PRANK SCREEN === */
+    #prank-content {
+      display: none;
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      justify-content: center; align-items: center; flex-direction: column;
+      z-index: 2000;
+    }
+    #prank-content.active {
+      display: flex;
+    }
+
+    #meme-gif {
+      max-width: min(500px, 85vw); border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      transition: transform 0.6s ease;
+      z-index: 10;
+    }
+
+    #prank-text {
+      font-size: 2.5em; font-weight: 800; color: white;
+      text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+      margin-top: 20px; text-align: center;
+      opacity: 0; transform: scale(0.5);
+      transition: all 0.5s ease;
+      z-index: 10;
+    }
+    #prank-text.show {
+      opacity: 1; transform: scale(1);
+    }
+
+    #fine-print {
+      position: fixed; bottom: 20px; width: 100%; text-align: center;
+      font-size: 0.8em; color: rgba(255,255,255,0.6);
+      opacity: 0; transition: opacity 1s ease;
+      z-index: 10;
+    }
+    #fine-print.show { opacity: 1; }
+
+    /* Floating corporate buzzwords */
+    .buzzword {
+      position: fixed; font-size: 1.2em; font-weight: 600;
+      color: rgba(255,255,255,0.15); pointer-events: none;
+      animation: floatUp 8s linear forwards;
+      z-index: 1;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { transform: translateY(-100px) rotate(20deg); opacity: 0; }
+    }
+
+    /* Gentle pulsing background */
+    @keyframes gentlePulse {
+      0%   { background: #1a1a2e; }
+      25%  { background: #16213e; }
+      50%  { background: #0f3460; }
+      75%  { background: #1a1a2e; }
+      100% { background: #1a1a2e; }
+    }
+
+    /* Play button */
+    #play-btn {
+      position: fixed; top: 20px; right: 20px;
+      padding: 12px 24px; font-size: 1em; font-weight: 600;
+      background: #4fc3f7; color: #1e3a5f; border: none; border-radius: 8px;
+      cursor: pointer; z-index: 5000;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      transition: transform 0.2s;
+    }
+    #play-btn:hover { transform: scale(1.08); }
   </style>
 </head>
 <body>
 
-<!-- Calm Mr. Miyagi Tai Chi video overlay -->
-<div id="intro-video-overlay" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:black;z-index:2000;display:flex;justify-content:center;align-items:center;">
-  <video id="miyagi-video" width="80%" style="border-radius:16px;box-shadow:0 0 40px #000;" autoplay muted>
-    <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
-    <!-- Replace with actual Mr. Miyagi Tai Chi video if available and allowed. Placeholder video used. -->
-    Your browser does not support the video tag.
-  </video>
+<!-- Phase 1: Corporate bait that requires a click (unlocks audio) -->
+<div id="corporate-bait">
+  <div class="logo-area">&#9679; Internal Portal</div>
+  <h1>Your Q2 Performance Review</h1>
+  <div class="subtitle">Preparing your personalised dashboard...</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+  <div class="loading-text" id="loading-status">Connecting to HR systems...</div>
+  <button class="click-prompt" id="reveal-btn">View My Results</button>
 </div>
 
-<div id="prank-content" style="display:none;">
-  <img src="https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" alt="Tai Chi Meme">
-  <audio id="kungfu-audio" autoplay loop>
-    <source src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae5e2.mp3" type="audio/mpeg">
-    <!-- This is a royalty-free version of 'Kung Fu Fighting'. For the original, you must have the rights to use it. -->
-    Your browser does not support the audio element.
-  </audio>
-  <button id="play-btn" style="position:fixed;top:20px;right:20px;font-size:1.2em;padding:10px 20px;z-index:1000;">Play Song</button>
+<!-- Phase 2: The prank -->
+<div id="prank-content">
+  <img id="meme-gif" src="https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif" alt="Surprise">
+  <div id="prank-text"></div>
+  <div id="fine-print">This message was approved by the Synergy & Wellness Committee™</div>
 </div>
-<script>
-// --- Prank reveal after intro video ---
-const introOverlay = document.getElementById('intro-video-overlay');
-const prankContent = document.getElementById('prank-content');
-const miyagiVideo = document.getElementById('miyagi-video');
 
-function showPrank() {
-  introOverlay.style.display = 'none';
-  prankContent.style.display = '';
-  // Start prank effects (audio, movement, etc)
-  if (typeof tryPlayAudio === 'function') tryPlayAudio();
-}
+<!-- Audio - short royalty-free kung fu clip -->
+<audio id="kungfu-audio" preload="auto">
+  <source src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae5e2.mp3" type="audio/mpeg">
+</audio>
 
-// Reveal prank after video ends or after 12 seconds (whichever comes first)
-miyagiVideo.addEventListener('ended', showPrank);
-setTimeout(showPrank, 12000);
-</script>
+<!-- Fallback play button if audio gets blocked -->
+<button id="play-btn">&#9654; Unmute the Experience</button>
 
 <script>
-// Only run prank effects after prank is revealed
-function startPrankEffects() {
-  // Flashing background colors
-  const colors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#ffffff", "#000000"];
-  let colorIndex = 0;
-  setInterval(() => {
-    document.body.style.background = colors[colorIndex % colors.length];
-    colorIndex++;
-  }, 200);
-
-  // Randomly move the image
-  const img = prankContent.querySelector('img');
-  function moveImage() {
-    const maxX = window.innerWidth - img.offsetWidth;
-    const maxY = window.innerHeight - img.offsetHeight;
-    const x = Math.random() * maxX;
-    const y = Math.random() * maxY;
-    img.style.position = 'absolute';
-    img.style.left = x + 'px';
-    img.style.top = y + 'px';
-  }
-  setInterval(moveImage, 700);
-
-  // Pop-up prank message after a few seconds
-  setTimeout(() => {
-    alert("You've been Tai Chi-ed! 🥋");
-  }, 5000);
-
-  // Audio play button logic
+(function() {
+  // Elements
+  const bait = document.getElementById('corporate-bait');
+  const prankContent = document.getElementById('prank-content');
+  const revealBtn = document.getElementById('reveal-btn');
   const audio = document.getElementById('kungfu-audio');
   const playBtn = document.getElementById('play-btn');
-  function tryPlayAudio() {
+  const prankText = document.getElementById('prank-text');
+  const finePrint = document.getElementById('fine-print');
+  const loadingStatus = document.getElementById('loading-status');
+  const memeGif = document.getElementById('meme-gif');
+
+  // Fake loading messages for corporate authenticity
+  const loadingMsgs = [
+    "Connecting to HR systems...",
+    "Retrieving KPI data...",
+    "Calculating synergy index...",
+    "Cross-referencing with management feedback...",
+    "Almost ready..."
+  ];
+  let msgIdx = 0;
+  const loadingInterval = setInterval(() => {
+    msgIdx++;
+    if (msgIdx < loadingMsgs.length) {
+      loadingStatus.textContent = loadingMsgs[msgIdx];
+    }
+  }, 900);
+
+  // Corporate buzzwords that float up during prank
+  const buzzwords = [
+    "Synergy", "Circle Back", "Low-Hanging Fruit", "Action Items",
+    "Deep Dive", "Move The Needle", "Bandwidth", "Pivot",
+    "Touch Base", "Leverage", "Deliverables", "Paradigm Shift",
+    "Take Offline", "Boil The Ocean", "Value-Add", "Stakeholder Alignment",
+    "Run It Up The Flagpole", "EOD", "Per My Last Email", "Let's Table This"
+  ];
+
+  function spawnBuzzword() {
+    const word = document.createElement('div');
+    word.className = 'buzzword';
+    word.textContent = buzzwords[Math.floor(Math.random() * buzzwords.length)];
+    word.style.left = (Math.random() * 80 + 10) + '%';
+    word.style.fontSize = (0.9 + Math.random() * 1.2) + 'em';
+    document.body.appendChild(word);
+    setTimeout(() => word.remove(), 8000);
+  }
+
+  // Prank messages that cycle
+  const prankMessages = [
+    "Your performance rating: OUTSTANDING* 🥋",
+    "* at Tai Chi",
+    "Per my last email... you've been pranked.",
+    "Please add this to the action items 📋",
+    "Let's circle back on your actual review 🔄",
+    "This is a growth opportunity 📈",
+    "April Fools! 🎉"
+  ];
+
+  // ===== MAIN REVEAL =====
+  revealBtn.addEventListener('click', function() {
+    clearInterval(loadingInterval);
+
+    // Fade out bait
+    bait.style.transition = 'opacity 0.5s ease';
+    bait.style.opacity = '0';
+
+    setTimeout(() => {
+      bait.style.display = 'none';
+
+      // Show prank
+      prankContent.classList.add('active');
+      document.body.style.animation = 'gentlePulse 6s ease infinite';
+
+      // Play audio (user clicked, so we have interaction permission)
+      audio.currentTime = 0;
+      audio.play().then(() => {
+        playBtn.style.display = 'none';
+
+        // Stop audio after 15 seconds for a shorter clip
+        setTimeout(() => {
+          audio.pause();
+          audio.currentTime = 0;
+        }, 15000);
+      }).catch(() => {
+        // Show fallback button if still blocked
+        playBtn.style.display = 'block';
+      });
+
+      // Start cycling prank text
+      let textIdx = 0;
+      function showNextMessage() {
+        prankText.classList.remove('show');
+        setTimeout(() => {
+          prankText.textContent = prankMessages[textIdx % prankMessages.length];
+          prankText.classList.add('show');
+          textIdx++;
+        }, 300);
+      }
+      showNextMessage();
+      setInterval(showNextMessage, 3000);
+
+      // Gentle meme wiggle (not seizure-inducing bouncing)
+      let wiggle = 0;
+      setInterval(() => {
+        wiggle++;
+        const angle = Math.sin(wiggle * 0.3) * 5;
+        const scale = 1 + Math.sin(wiggle * 0.2) * 0.05;
+        memeGif.style.transform = `rotate(${angle}deg) scale(${scale})`;
+      }, 100);
+
+      // Spawn floating buzzwords periodically
+      spawnBuzzword();
+      setInterval(spawnBuzzword, 1500);
+
+      // Show fine print after a moment
+      setTimeout(() => finePrint.classList.add('show'), 4000);
+
+    }, 500);
+  });
+
+  // Fallback play button
+  playBtn.addEventListener('click', function() {
+    audio.currentTime = 0;
     audio.play().then(() => {
       playBtn.style.display = 'none';
-    }).catch(() => {
-      playBtn.style.display = 'block';
+      setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+      }, 15000);
     });
-  }
-  // Try to play as soon as prank is revealed
-  tryPlayAudio();
-  playBtn.addEventListener('click', tryPlayAudio);
-  audio.addEventListener('play', () => {
-    playBtn.style.display = 'none';
   });
-}
-
-// Start prank effects when prank is shown
-let prankStarted = false;
-function revealAndStartPrank() {
-  if (!prankStarted) {
-    prankStarted = true;
-    startPrankEffects();
-  }
-}
-// Call when prank is shown
-showPrank = (function(orig){
-  return function() {
-    orig();
-    revealAndStartPrank();
-  }
-})(showPrank);
+})();
 </script>
 
 </body>
